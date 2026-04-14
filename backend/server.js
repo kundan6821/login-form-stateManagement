@@ -15,14 +15,17 @@ app.use(cors());
 app.use('/api/auth', authRoutes);
 app.use('/api/protected', protectedRoutes);
 
-// Connect to Database
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('MongoDB Connected successfully');
-    // Only start the Express server once the database is connected
-    const PORT = process.env.PORT || 5000;
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-    });
-  })
-  .catch((err) => console.log('MongoDB connection error:', err));
+// Start Server and Connect to DB sequentially
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  
+  // Afterwards, connect to Database
+  if (!process.env.MONGODB_URI) {
+    console.error('FATAL: MONGODB_URI is not defined in environment variables!');
+  } else {
+    mongoose.connect(process.env.MONGODB_URI)
+      .then(() => console.log('MongoDB Connected successfully'))
+      .catch((err) => console.log('MongoDB connection error:', err));
+  }
+});
