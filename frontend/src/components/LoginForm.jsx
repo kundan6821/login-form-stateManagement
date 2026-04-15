@@ -8,90 +8,156 @@ import {
   Container, 
   Alert, 
   CircularProgress,
-  Paper
+  Card,
+  CardContent,
+  Divider,
+  InputAdornment
 } from '@mui/material';
+import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 export const LoginForm = () => {
   const { register, handleSubmit, formState: { errors } } = useForm();
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState('');
   const { login } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const onSubmit = async (data) => {
-    setLoading(true);
-    setErrorMsg('');
-    const result = await login(data.email, data.password);
-    setLoading(false);
+  const processLogin = async (formData) => {
+    setIsSubmitting(true);
+    setApiError('');
+    const result = await login(formData.email, formData.password);
+    setIsSubmitting(false);
 
     if (result.success) {
       navigate('/dashboard');
     } else {
-      setErrorMsg(result.message);
+      setApiError(result.message);
     }
   };
 
   return (
-    <Container component="main" maxWidth="xs" sx={{ mt: 8 }}>
-      <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        <Typography component="h1" variant="h5">
-          Sign In
-        </Typography>
-        
-        {errorMsg && <Alert severity="error" sx={{ width: '100%', mt: 2 }}>{errorMsg}</Alert>}
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #e0f2f1 0%, #e8eaf6 100%)',
+      }}
+    >
+      <Container maxWidth="sm">
+        <Card 
+          sx={{ 
+            borderRadius: 4, 
+            boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+            overflow: 'visible'
+          }}
+        >
+          <CardContent sx={{ p: 5 }}>
+            <Typography 
+              variant="h4" 
+              align="center" 
+              fontWeight={600} 
+              gutterBottom
+              color="primary"
+            >
+              Welcome Back
+            </Typography>
+            <Typography 
+              variant="body2" 
+              align="center" 
+              color="text.secondary" 
+              sx={{ mb: 3 }}
+            >
+              Please enter your credentials to continue
+            </Typography>
 
-        <Box component="form" onSubmit={handleSubmit(onSubmit)} noValidate sx={{ mt: 1, width: '100%' }}>
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            id="email"
-            label="Email Address"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            {...register('email', { 
-              required: 'Email is required',
-              pattern: {
-                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                message: 'Invalid email address'
-              }
-            })}
-            error={!!errors.email}
-            helperText={errors.email?.message}
-          />
-          <TextField
-            margin="normal"
-            required
-            fullWidth
-            name="password"
-            label="Password"
-            type="password"
-            id="password"
-            autoComplete="current-password"
-            {...register('password', { 
-              required: 'Password is required',
-              minLength: {
-                value: 6,
-                message: 'Password must be at least 6 characters'
-              }
-            })}
-            error={!!errors.password}
-            helperText={errors.password?.message}
-          />
-          <Button
-            type="submit"
-            fullWidth
-            variant="contained"
-            sx={{ mt: 3, mb: 2, height: 48 }}
-            disabled={loading}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Log In'}
-          </Button>
-        </Box>
-      </Paper>
-    </Container>
+            <Divider sx={{ mb: 3 }} />
+            
+            {apiError && (
+              <Alert severity="error" variant="filled" sx={{ mb: 2, borderRadius: 2 }}>
+                {apiError}
+              </Alert>
+            )}
+
+            <Box component="form" onSubmit={handleSubmit(processLogin)} noValidate>
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                id="login-email"
+                label="Email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                autoFocus
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <EmailOutlinedIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                {...register('email', { 
+                  required: 'Please provide your email',
+                  pattern: {
+                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                    message: 'Enter a valid email address'
+                  }
+                })}
+                error={!!errors.email}
+                helperText={errors.email?.message}
+              />
+              <TextField
+                margin="normal"
+                required
+                fullWidth
+                label="Password"
+                type="password"
+                id="login-password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <LockOutlinedIcon color="primary" />
+                    </InputAdornment>
+                  ),
+                }}
+                {...register('password', { 
+                  required: 'Password cannot be empty',
+                  minLength: {
+                    value: 6,
+                    message: 'Minimum 6 characters required'
+                  }
+                })}
+                error={!!errors.password}
+                helperText={errors.password?.message}
+              />
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                size="large"
+                sx={{ 
+                  mt: 4, 
+                  mb: 1, 
+                  py: 1.5, 
+                  textTransform: 'none', 
+                  fontSize: '1rem',
+                  fontWeight: 600,
+                  letterSpacing: 0.5
+                }}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? <CircularProgress size={22} color="inherit" /> : 'Sign In'}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };

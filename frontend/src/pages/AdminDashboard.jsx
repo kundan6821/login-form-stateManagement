@@ -1,52 +1,97 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Container, Typography, Button, Paper, Box, Alert } from '@mui/material';
+import { 
+  Container, Typography, Button, Card, CardContent, 
+  Box, Alert, Chip, Stack, Divider 
+} from '@mui/material';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SecurityIcon from '@mui/icons-material/Security';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export const AdminDashboard = () => {
-  const { user, logout } = useContext(AuthContext);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
+  const { user } = useContext(AuthContext);
+  const [adminData, setAdminData] = useState(null);
+  const [fetchError, setFetchError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadAdminData = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/protected/admin-data`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/protected/admin-data`, {
           headers: {
             Authorization: `Bearer ${user.token}`
           }
         });
-        setData(response.data);
+        setAdminData(res.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch admin data');
+        setFetchError(err.response?.data?.message || 'Unable to load admin data');
       }
     };
     
-    if (user?.token) fetchData();
+    if (user?.token) loadAdminData();
   }, [user]);
 
   return (
-    <Container maxWidth="md" sx={{ mt: 8 }}>
-      <Paper sx={{ p: 4, borderTop: '5px solid #d32f2f' }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4" color="error">Admin Control Panel</Typography>
-          <Button variant="outlined" onClick={() => navigate('/dashboard')}>Back to Dashboard</Button>
-        </Box>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', py: 6 }}>
+      <Container maxWidth="md">
+        <Card 
+          sx={{ 
+            borderRadius: 4, 
+            boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
+            borderLeft: '5px solid #5c6bc0'
+          }}
+        >
+          <CardContent sx={{ p: 4 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <SecurityIcon color="secondary" />
+                <Typography variant="h5" fontWeight={600} color="secondary">
+                  Admin Panel
+                </Typography>
+              </Stack>
+              <Button 
+                variant="text" 
+                startIcon={<ArrowBackIcon />}
+                onClick={() => navigate('/dashboard')}
+                sx={{ textTransform: 'none' }}
+              >
+                Back
+              </Button>
+            </Stack>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            <Divider sx={{ mb: 3 }} />
 
-        {data ? (
-          <Box p={3} bgcolor="#ffebee" borderRadius={2}>
-            <Typography variant="body1"><strong>Secret Message:</strong> {data.message}</Typography>
-            <Typography variant="body1"><strong>Role:</strong> <span style={{color: 'red', fontWeight: 'bold'}}>{data.userRole}</span></Typography>
-            <Typography variant="body1"><strong>Admin Data:</strong> {data.data}</Typography>
-          </Box>
-        ) : (
-          <Typography>Verifying admin credentials and loading data...</Typography>
-        )}
-      </Paper>
-    </Container>
+            {fetchError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{fetchError}</Alert>}
+
+            {adminData ? (
+              <Box sx={{ p: 2.5, bgcolor: '#ede7f6', borderRadius: 3 }}>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">Confidential Message</Typography>
+                    <Typography variant="body1">{adminData.message}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">Access Level</Typography>
+                    <Chip 
+                      label={adminData.userRole} 
+                      color="secondary" 
+                      size="small"
+                      sx={{ mt: 0.5, fontWeight: 600 }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">Admin Data</Typography>
+                    <Typography variant="body1">{adminData.data}</Typography>
+                  </Box>
+                </Stack>
+              </Box>
+            ) : (
+              <Typography color="text.secondary">Checking admin access and loading data...</Typography>
+            )}
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };

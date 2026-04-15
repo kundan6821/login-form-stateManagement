@@ -1,65 +1,107 @@
 import React, { useContext, useEffect, useState } from 'react';
-import { Container, Typography, Button, Paper, Box, Alert } from '@mui/material';
+import { 
+  Container, Typography, Button, Card, CardContent, 
+  Box, Alert, Chip, Stack, Divider 
+} from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 export const Dashboard = () => {
   const { user, logout } = useContext(AuthContext);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState('');
+  const [dashboardData, setDashboardData] = useState(null);
+  const [fetchError, setFetchError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const loadDashboard = async () => {
       try {
-        const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/protected/dashboard-data`, {
+        const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/protected/dashboard-data`, {
           headers: {
             Authorization: `Bearer ${user.token}`
           }
         });
-        setData(response.data);
+        setDashboardData(res.data);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch data');
+        setFetchError(err.response?.data?.message || 'Failed to fetch data');
       }
     };
     
-    if (user?.token) fetchData();
+    if (user?.token) loadDashboard();
   }, [user]);
 
-  const handleLogout = () => {
+  const handleSignOut = () => {
     logout();
     navigate('/login');
   };
 
   return (
-    <Container maxWidth="md" sx={{ mt: 8 }}>
-      <Paper sx={{ p: 4 }}>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-          <Typography variant="h4">User Dashboard</Typography>
-          <Button variant="outlined" color="secondary" onClick={handleLogout}>Logout</Button>
-        </Box>
+    <Box sx={{ minHeight: '100vh', bgcolor: '#f5f7fa', py: 6 }}>
+      <Container maxWidth="md">
+        <Card sx={{ borderRadius: 4, boxShadow: '0 4px 20px rgba(0,0,0,0.06)' }}>
+          <CardContent sx={{ p: 4 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" mb={3}>
+              <Typography variant="h5" fontWeight={600} color="primary">
+                My Dashboard
+              </Typography>
+              <Button 
+                variant="outlined" 
+                color="error" 
+                startIcon={<LogoutIcon />}
+                onClick={handleSignOut}
+                sx={{ textTransform: 'none' }}
+              >
+                Sign Out
+              </Button>
+            </Stack>
 
-        {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            <Divider sx={{ mb: 3 }} />
 
-        {data ? (
-          <Box>
-            <Typography variant="body1"><strong>Message:</strong> {data.message}</Typography>
-            <Typography variant="body1"><strong>Role:</strong> <span style={{color: 'blue'}}>{data.userRole}</span></Typography>
-            <Typography variant="body1"><strong>Server Data:</strong> {data.data}</Typography>
-          </Box>
-        ) : (
-          <Typography>Loading user data...</Typography>
-        )}
+            {fetchError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }}>{fetchError}</Alert>}
 
-        {user?.role === 'admin' && (
-          <Box mt={4}>
-            <Button variant="contained" color="primary" onClick={() => navigate('/admin')}>
-              Go to Admin Dashboard
-            </Button>
-          </Box>
-        )}
-      </Paper>
-    </Container>
+            {dashboardData ? (
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Message</Typography>
+                  <Typography variant="body1">{dashboardData.message}</Typography>
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Your Role</Typography>
+                  <Chip 
+                    label={dashboardData.userRole} 
+                    color="primary" 
+                    variant="outlined" 
+                    size="small" 
+                    sx={{ mt: 0.5 }}
+                  />
+                </Box>
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">Server Info</Typography>
+                  <Typography variant="body1">{dashboardData.data}</Typography>
+                </Box>
+              </Stack>
+            ) : (
+              <Typography color="text.secondary">Fetching your data...</Typography>
+            )}
+
+            {user?.role === 'admin' && (
+              <Box mt={4}>
+                <Button 
+                  variant="contained" 
+                  color="secondary" 
+                  startIcon={<AdminPanelSettingsIcon />}
+                  onClick={() => navigate('/admin')}
+                  sx={{ textTransform: 'none' }}
+                >
+                  Admin Panel
+                </Button>
+              </Box>
+            )}
+          </CardContent>
+        </Card>
+      </Container>
+    </Box>
   );
 };
